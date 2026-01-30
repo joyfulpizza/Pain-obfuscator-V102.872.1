@@ -2,16 +2,16 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pain Obfuscator</title>
+<title>PainVM HTML Obfuscator</title>
 <style>
-body { background:#0b0b0b; color:#e0e0e0; font-family:monospace }
-textarea { width:100%; height:220px; background:#111; color:#0f0 }
-button { margin-top:10px; padding:10px }
+body{background:#0b0b0b;color:#e0e0e0;font-family:monospace}
+textarea{width:100%;height:220px;background:#111;color:#0f0}
+button{padding:10px;margin-top:10px}
 </style>
 </head>
 <body>
 
-<h2>🔥 Pain Obfuscator( you need an executor that supports VM )</h2>
+<h2>🔥 Pain Obfuscator mobile</h2>
 
 <textarea id="input" placeholder="Paste Lua here"></textarea>
 <button onclick="obf()">Obfuscate</button>
@@ -19,17 +19,22 @@ button { margin-top:10px; padding:10px }
 
 <script>
 function r(a,b){return Math.floor(Math.random()*(b-a))+a}
-function rn(n=10){
+function rn(n=12){
   const c="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let s="_";
   for(let i=0;i<n;i++) s+=c[r(0,c.length)];
   return s;
 }
 function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+function xor(s,k){
+  let o="";
+  for(let i=0;i<s.length;i++)
+    o+=String.fromCharCode(s.charCodeAt(i)^k);
+  return o;
+}
 
-// VERY simple Lua → VM compiler (demo-safe)
+/* simple demo VM compiler (safe baseline) */
 function compileVM(src){
-  // example: only supports print("text")
   let m = src.match(/print\s*\(\s*["'](.+?)["']\s*\)/);
   let txt = m ? m[1] : "VM executed";
   return JSON.stringify([
@@ -40,29 +45,23 @@ function compileVM(src){
   ]);
 }
 
-function xor(s,k){
-  let o="";
-  for(let i=0;i<s.length;i++)
-    o+=String.fromCharCode(s.charCodeAt(i)^k);
-  return o;
-}
-
 function obf(){
   let src=document.getElementById("input").value;
   if(!src) return;
 
-  let vm = compileVM(src);
-  let key = r(30,220);
-  let enc = b64(xor(vm,key));
+  let key=r(30,220);
+  let vm=compileVM(src);
+  let enc=b64(xor(vm,key));
 
-  let K=rn(), D=rn(), V=rn(), F=rn();
+  let K=rn(),D=rn(),DEC=rn(),VM=rn();
 
-let lua =
-`-- Pain obfuscator >.&@/÷.♤{¿♧♧♧♧♧♧♧♧♧♧♧♧♧♧°°°°°°°°°°°°°°°°
+let lua=
+`-- Pain $@>,._[<."@,/.>^,[/=
 do
   
-  local p=print print=function() end
-  tostring=function(v) if type(v)=="function" then return "[protected]" end return _G.tostring(v) end
+  local _p=print print=function() end
+  local _t=tostring
+  tostring=function(v) if type(v)=="function" then return "[protected]" end return _t(v) end
 
   
   local fp=(bit32 and "b" or "")..(getgenv and "g" or "")..(hookfunction and "h" or "")
@@ -71,18 +70,36 @@ do
   
   local ${rn()}={123,829,882,199}
   if 1>2 then while true do end end
+  for _=1,0 do error("dead") end
 
   local ${K}=${key}
   local ${D}="${enc}"
 
-  local function ${F}(d,k)
-    local s=game:GetService("HttpService"):Base64Decode(d)
+  
+  local function ${DEC}(d,k)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    d=d:gsub('[^'..b..'=]','')
+    local s=(d:gsub('.',function(x)
+      if x=='=' then return '' end
+      local r,f='',(b:find(x)-1)
+      for i=6,1,-1 do
+        r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0')
+      end
+      return r
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?',function(x)
+      if #x~=8 then return '' end
+      local c=0
+      for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+      return string.char(c)
+    end))
+
     local o={}
     for i=1,#s do o[i]=string.char(bit32.bxor(s:byte(i),k)) end
     return loadstring("return "..table.concat(o))()
   end
 
-  local function ${V}(c)
+  
+  local function ${VM}(c)
     local st,ip={},1
     while true do
       local i=c[ip] if not i then break end
@@ -98,10 +115,15 @@ do
     end
   end
 
-  ${V}(${F}(${D},${K}))
+  
+  local src=debug.getinfo(1,"S").source
+  local sum=0 for i=1,#src do sum=sum+src:byte(i) end
+  if sum%7~=3 then while true do end end
+
+  ${VM}(${DEC}(${D},${K}))
 end`;
 
-  document.getElementById("output").value = lua;
+  document.getElementById("output").value=lua;
 }
 </script>
 
