@@ -11,7 +11,7 @@ button{padding:10px;margin-top:10px}
 </head>
 <body>
 
-<h2>🔥 Pain Obfuscator mobile</h2>
+<h2>🔥 PainVM HTML Obfuscator (Merged)</h2>
 
 <textarea id="input" placeholder="Paste Lua here"></textarea>
 <button onclick="obf()">Obfuscate</button>
@@ -56,9 +56,9 @@ function obf(){
   let K=rn(),D=rn(),DEC=rn(),VM=rn();
 
 let lua=
-`-- Pain $@>,._[<."@,/.>^,[/=
+`-- Pain
 do
-  
+  -- /&># ^÷/# ?[=÷ ]@>,%<) @%/÷= /&÷ #÷"[,$÷dot.finish
   local _p=print print=function() end
   local _t=tostring
   tostring=function(v) if type(v)=="function" then return "[protected]" end return _t(v) end
