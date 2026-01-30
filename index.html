@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pain Obfuscator</title>
+<style>
+body { background:#0b0b0b; color:#e0e0e0; font-family:monospace }
+textarea { width:100%; height:220px; background:#111; color:#0f0 }
+button { margin-top:10px; padding:10px }
+</style>
+</head>
+<body>
+
+<h2>🔥 Pain Obfuscator( you need an executor that supports VM )</h2>
+
+<textarea id="input" placeholder="Paste Lua here"></textarea>
+<button onclick="obf()">Obfuscate</button>
+<textarea id="output" placeholder="Drop-in Lua output"></textarea>
+
+<script>
+function r(a,b){return Math.floor(Math.random()*(b-a))+a}
+function rn(n=10){
+  const c="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let s="_";
+  for(let i=0;i<n;i++) s+=c[r(0,c.length)];
+  return s;
+}
+function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+
+// VERY simple Lua → VM compiler (demo-safe)
+function compileVM(src){
+  // example: only supports print("text")
+  let m = src.match(/print\s*\(\s*["'](.+?)["']\s*\)/);
+  let txt = m ? m[1] : "VM executed";
+  return JSON.stringify([
+    [4,"print"],
+    [1,txt],
+    [2,1],
+    [5]
+  ]);
+}
+
+function xor(s,k){
+  let o="";
+  for(let i=0;i<s.length;i++)
+    o+=String.fromCharCode(s.charCodeAt(i)^k);
+  return o;
+}
+
+function obf(){
+  let src=document.getElementById("input").value;
+  if(!src) return;
+
+  let vm = compileVM(src);
+  let key = r(30,220);
+  let enc = b64(xor(vm,key));
+
+  let K=rn(), D=rn(), V=rn(), F=rn();
+
+let lua =
+`-- Pain obfuscator >.&@/÷.♤{¿♧♧♧♧♧♧♧♧♧♧♧♧♧♧°°°°°°°°°°°°°°°°
+do
+  
+  local p=print print=function() end
+  tostring=function(v) if type(v)=="function" then return "[protected]" end return _G.tostring(v) end
+
+  
+  local fp=(bit32 and "b" or "")..(getgenv and "g" or "")..(hookfunction and "h" or "")
+  if not ({["bg"]=1,["bgh"]=1})[fp] then while true do end end
+
+  
+  local ${rn()}={123,829,882,199}
+  if 1>2 then while true do end end
+
+  local ${K}=${key}
+  local ${D}="${enc}"
+
+  local function ${F}(d,k)
+    local s=game:GetService("HttpService"):Base64Decode(d)
+    local o={}
+    for i=1,#s do o[i]=string.char(bit32.bxor(s:byte(i),k)) end
+    return loadstring("return "..table.concat(o))()
+  end
+
+  local function ${V}(c)
+    local st,ip={},1
+    while true do
+      local i=c[ip] if not i then break end
+      if i[1]==1 then st[#st+1]=i[2]
+      elseif i[1]==2 then
+        local a=i[2] local args={}
+        for x=1,a do args[x]=table.remove(st) end
+        local f=table.remove(st)
+        st[#st+1]=f(table.unpack(args))
+      elseif i[1]==4 then st[#st+1]=_G[i[2]]
+      elseif i[1]==5 then return end
+      ip=ip+1
+    end
+  end
+
+  ${V}(${F}(${D},${K}))
+end`;
+
+  document.getElementById("output").value = lua;
+}
+</script>
+
+</body>
+</html>
